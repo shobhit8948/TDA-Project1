@@ -11,15 +11,26 @@ headers = {
     "Authorization": f"token {GITHUB_TOKEN}"
 }
 
-def get_users_in_basel(min_followers=10):
-    url = f"https://api.github.com/search/users?q=location:Basel+followers:>{min_followers}"
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        users = response.json().get("items", [])
-        return users
-    else:
-        print(f"Failed to fetch users: {response.status_code}")
-        return []
+def get_users_in_basel(min_followers=10, max_pages=10):
+    users = []
+    page = 1
+
+    while page <= max_pages:
+        url = f"https://api.github.com/search/users?q=location:Basel+followers:>{min_followers}&page={page}&per_page=100"
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            page_users = response.json().get("items", [])
+            users.extend(page_users)
+            if len(page_users) < 100:  # Last page if less than 100 users
+                break
+        else:
+            print(f"Failed to fetch users on page {page}: {response.status_code}")
+            break
+
+        page += 1
+
+    return users
 
 def save_users_to_csv(users):
     # Extract the required fields for each user
